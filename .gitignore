@@ -3,5 +3,7 @@
 .project
 .settings
 .classpath
+*.pyc
 bin/
 dist/
+eclipse/

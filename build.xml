@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="search module" default="build" basedir=".">
+<project name="play-search" default="build" basedir=".">
+    
+	<property environment="env" />
+	<property name="play.path" value="${env.PLAY_HOME}" />
+	
+    <target name="check" unless="play.path">
+        <fail message="Please specify Play framework path using -Dplay.path=/path/to/framework/home" />
+    </target>
 
     <path id="project.classpath">
-        <!--<pathelement path="${play.path}/framework/classes"/>-->
+        <pathelement path="${play.path}/framework/classes"/>
         <fileset dir="${play.path}/framework/lib">
             <include name="*.jar"/>
         </fileset>
         <fileset dir="${play.path}/framework">
-            <include name="play.jar"/>
+            <include name="*.jar"/>
         </fileset>
         <fileset dir="lib">
             <include name="*.jar"/>
@@ -16,7 +23,7 @@
     </path>
 
     <target name="build" depends="compile">
-
+        <mkdir dir="lib" />
         <copy todir="tmp/classes">
             <fileset dir="src">
                 <include name="**/*.properties"/>
@@ -25,19 +32,19 @@
                 <include name="**/play.static"/>
             </fileset>
         </copy>
-        <jar destfile="lib/search.jar" basedir="tmp/classes">
+        <jar destfile="lib/play-search.jar" basedir="tmp/classes">
             <manifest>
-                <section name="Play">
-                    <attribute name="Specification-Title" value="Search module"/>
+                <section name="Play-module">
+                    <attribute name="Specification-Title" value="play-search"/>
                 </section>
             </manifest>
         </jar>
         <delete dir="tmp" />
     </target>
 
-    <target name="compile">
+    <target name="compile" depends="check">
         <mkdir dir="tmp/classes" />
-        <javac srcdir="src" destdir="tmp/classes" target="1.5" debug="true">
+        <javac srcdir="src" destdir="tmp/classes" target="1.7" debug="true" includeantruntime="true">
             <classpath refid="project.classpath" />
         </javac>
     </target>

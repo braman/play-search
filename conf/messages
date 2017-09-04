@@ -1,0 +1,5 @@
+# Default komek_mod_secure messages
+# You can specialize this file for each language.
+# For exemple, for french create a messages.fr file
+
+#komek_mod_secure.name=komek_mod_secure

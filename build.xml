@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="play-search" default="build" basedir=".">
+<project name="search module" default="build" basedir=".">
     
 	<property environment="env" />
 	<property name="play.path" value="${env.PLAY_HOME}" />
@@ -32,10 +32,10 @@
                 <include name="**/play.static"/>
             </fileset>
         </copy>
-        <jar destfile="lib/play-search.jar" basedir="tmp/classes">
+        <jar destfile="lib/search.jar" basedir="tmp/classes">
             <manifest>
                 <section name="Play-module">
-                    <attribute name="Specification-Title" value="play-search"/>
+                    <attribute name="Specification-Title" value="search-custom"/>
                 </section>
             </manifest>
         </jar>

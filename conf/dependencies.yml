@@ -1,4 +1,4 @@
-self: play -> search head
+self: play -> search 2.1
 
 require:
     - play

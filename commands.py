@@ -1,10 +1,10 @@
 # Here you can create play commands that are specific to the module, and extend existing commands
 
-MODULE = 'play-search'
+MODULE = 'search'
 
 # Commands that are specific to your module
 
-COMMANDS = ['play-search:hello']
+COMMANDS = ['search:hello']
 
 def execute(**kargs):
     command = kargs.get("command")
@@ -12,7 +12,7 @@ def execute(**kargs):
     args = kargs.get("args")
     env = kargs.get("env")
 
-    if command == "play-search:hello":
+    if command == "search:hello":
         print "~ Hello"
 
 

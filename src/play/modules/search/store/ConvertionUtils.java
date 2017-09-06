@@ -11,6 +11,7 @@ import org.apache.lucene.search.SortField;
 import play.Logger;
 import play.data.binding.Binder;
 import play.db.jpa.Blob;
+import play.db.jpa.GenericModel;
 import play.db.jpa.JPABase;
 import play.db.jpa.Model;
 import play.exceptions.UnexpectedException;
@@ -155,19 +156,7 @@ public class ConvertionUtils {
      * @return the field value (a Long or a String for UUID)
      */
     public static Object getIdValueFor(JPABase jpaBase) {
-        if (jpaBase instanceof Model) {
-            return ((Model ) jpaBase).id;
-        }
-
-        java.lang.reflect.Field field = getIdField(jpaBase.getClass());
-        Object val = null;
-        try {
-            val = field.get(jpaBase);
-        } catch (IllegalAccessException e) {
-            Logger.error("Unable to read the field value of a field annotated with @Id " + field.getName() + " due to "
-                            + e.getMessage(), e);
-        }
-        return val;
+        return jpaBase._key();
     }
 
     public static boolean isForcedUntokenized(Class<?> clazz, String fieldName) {

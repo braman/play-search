@@ -1,5 +1,6 @@
 package play.modules.search.store;
 
+import java.util.Arrays;
 import java.util.Collection;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
@@ -24,62 +25,84 @@ import play.modules.search.Query.SearchException;
  * @author jfp
  */
 public class ConvertionUtils {
-    /**
+	private static final String JAVA_MEMBER_ACCESSOR = ".";
+	
+	/**
      * Examines a JPABase object and creates the corresponding Lucene Document
      * 
      * @param object to examine, expected a JPABase object
      * @return the corresponding Lucene document
      * @throws Exception
      */
-    public static Document toDocument(Object object) throws Exception {
-        Indexed indexed = object.getClass().getAnnotation(Indexed.class);
-        if (indexed == null)
-            return null;
-        if (!(object instanceof JPABase))
-            return null;
-        JPABase jpaBase = (JPABase) object;
-        Document document = new Document();
-        document.add(new Field("_docID", getIdValueFor(jpaBase) + "", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        StringBuffer allValue = new StringBuffer();
-        for (java.lang.reflect.Field field : object.getClass().getFields()) {
-            play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
-            if (index == null)
-                continue;
-            if (field.getType().isArray())
-                continue;
-            if (Collection.class.isAssignableFrom(field.getType()))
-                continue;
+	public static Document toDocument(Object object) throws Exception {
+		Indexed indexed = object.getClass().getAnnotation(Indexed.class);
+		
+		if (indexed == null) {
+			return null;
+		}
+		
+		if (!(object instanceof JPABase)) {
+			return null;
+		}
 
-            String name = field.getName();
-            String value = null;
+		JPABase jpaBase = (JPABase) object;
+		DocumentBuilder builder = new DocumentBuilder(getIdValueFor(jpaBase) + "");
 
-            if (JPABase.class.isAssignableFrom(field.getType()) && !(index.joinField().length() == 0)) {
-                JPABase joinObject = (JPABase ) field.get(object);
-                for (java.lang.reflect.Field joinField : joinObject.getClass().getFields()) {
-                    if (joinField.getName().equals(index.joinField())) {
-                        name = joinField.getName();
-                        value = valueOf(joinObject, joinField);
-                    }
-                }
-            } else {
-                value = valueOf(object, field);
-            }
+		for (java.lang.reflect.Field field : object.getClass().getFields()) {
+			play.modules.search.Field index = field.getAnnotation(play.modules.search.Field.class);
+			
+			if (index == null) {
+				continue;
+			}
+			
+			if (field.getType().isArray()) {
+				continue;
+			}
+			
+			if (Collection.class.isAssignableFrom(field.getType())) {
+				continue;
+			}
 
-            if (value == null)
-                continue;
+			String name = field.getName();
+			
+			if (JPABase.class.isAssignableFrom(field.getType()) && index.joinField().length > 0) {
+				traverseJoinFields(builder, name, "", index, (JPABase ) field.get(object));
+			} else {
+				builder.addField(name, valueOf(object, field), index);
+			}
+		}
 
-            document.add(new Field(name, value, index.stored() ? Field.Store.YES : Field.Store.NO,
-                            index.tokenize() ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED));
-            if (index.tokenize() && index.sortable()) {
-                document.add(new Field(name + "_untokenized", value, index.stored() ? Field.Store.YES : Field.Store.NO,
-                                Field.Index.NOT_ANALYZED));
-            }
-            allValue.append(value).append(' ');
+		return builder.toDocument();
+	}
+
+    static void traverseJoinFields(DocumentBuilder builder, String indexName, String prefix, play.modules.search.Field index, JPABase object) throws Exception {
+        if (object == null) {
+            return;
         }
-        document.add(new Field("allfield", allValue.toString(), Field.Store.NO, Field.Index.ANALYZED));
-        return document;
-    }
 
+        for (java.lang.reflect.Field field : object.getClass().getFields()) {
+            String name = prefix + field.getName();
+            if (isJoinFieldMatch(index.joinField(), name)) {
+                if (JPABase.class.isAssignableFrom(field.getType())) {
+                    traverseJoinFields(builder, indexName, name + JAVA_MEMBER_ACCESSOR, index, (JPABase ) field.get(object));
+                }
+                if (Arrays.asList(index.joinField()).contains(name)) {
+                    builder.addField(indexName + JAVA_MEMBER_ACCESSOR + name, valueOf(object, field), index);
+                }
+            }
+        }
+    }
+    
+    static boolean isJoinFieldMatch(String[] joinFields, String name) {
+        for (String joinField : joinFields) {
+            if (joinField.equals(name) || joinField.startsWith(name + JAVA_MEMBER_ACCESSOR)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    
     public static String valueOf(Object object, java.lang.reflect.Field field) throws Exception {
         if (field.getType().equals(String.class)) {
             return (String ) field.get(object);
@@ -156,7 +179,19 @@ public class ConvertionUtils {
      * @return the field value (a Long or a String for UUID)
      */
     public static Object getIdValueFor(JPABase jpaBase) {
-        return jpaBase._key();
+        if (jpaBase instanceof Model) {
+            return ((Model ) jpaBase).id;
+        }
+
+        java.lang.reflect.Field field = getIdField(jpaBase.getClass());
+        Object val = null;
+        try {
+            val = field.get(jpaBase);
+        } catch (IllegalAccessException e) {
+            Logger.error("Unable to read the field value of a field annotated with @Id " + field.getName() + " due to "
+                            + e.getMessage(), e);
+        }
+        return val;
     }
 
     public static boolean isForcedUntokenized(Class<?> clazz, String fieldName) {

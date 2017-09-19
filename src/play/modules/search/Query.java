@@ -162,7 +162,6 @@ public class Query {
             if (offset > l) {
                 return results;
             }
-            List<Long> ids = new ArrayList<Long>();
             if (pageSize > 0) {
                 for (int i = offset; i < (offset + pageSize > l ? l : offset + pageSize); i++) {
                     QueryResult qresult = new QueryResult();
@@ -171,8 +170,9 @@ public class Query {
                     if (fetch) {
                         Object objectId = ConvertionUtils.getIdValueFromIndex(clazz, qresult.id);
                         qresult.object = (JPABase)JPA.em().find(clazz, objectId);
-                        if (qresult.object == null)
+                        if (qresult.object == null) {
                             throw new SearchException("Please re-index");
+                        }
                     }
                     results.add(qresult);
                 }
@@ -184,8 +184,9 @@ public class Query {
                     if (fetch) {
                         Object objectId = ConvertionUtils.getIdValueFromIndex(clazz, qresult.id);
                         qresult.object = (JPABase)JPA.em().find(clazz, objectId);
-                        if (qresult.object == null)
+                        if (qresult.object == null) {
                             throw new SearchException("Please re-index");
+                        }
                     }
                     results.add(qresult);
                 }
